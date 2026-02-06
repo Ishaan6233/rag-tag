@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pathlib import Path
 import ifcopenshell
 import pandas as pd
@@ -7,24 +8,37 @@ import plotly.graph_objects as go
 from ifc_geometry_parse import get_ifc_model, extract_geometry_data
 from ifc_to_csv import _find_project_root, _find_ifc_dir
 
-script_dir = Path(__file__).resolve().parent
-project_root = _find_project_root(script_dir) or script_dir
-ifc_dir = _find_ifc_dir(script_dir)
-if ifc_dir is None:
-    raise FileNotFoundError("Could not find 'IFC-Files/' folder.")
 
-# Pick the IFC file dynamically
-ifc_file = next(ifc_dir.glob("Building-Architecture.ifc"), None)
-if ifc_file is None:
-    raise FileNotFoundError("IFC file not found in IFC-Files/ folder.")
+def resolve_project_root() -> Path:
+    script_dir = Path(__file__).resolve().parent
+    return _find_project_root(script_dir) or script_dir
 
-# Ensure output directory exists
-csv_dir = project_root / "output"
-csv_dir.mkdir(exist_ok=True)
-csv_file = csv_dir / "Building-Architecture.csv"
 
-model = get_ifc_model(ifc_file)
-geom_data = extract_geometry_data(model)
+def resolve_ifc_dir() -> Path:
+    script_dir = Path(__file__).resolve().parent
+    ifc_dir = _find_ifc_dir(script_dir)
+    if ifc_dir is None:
+        raise FileNotFoundError("Could not find 'IFC-Files/' folder.")
+    return ifc_dir
+
+
+def resolve_ifc_file(ifc_path: Path | None = None) -> Path:
+    if ifc_path is not None:
+        candidate = ifc_path.expanduser().resolve()
+        if not candidate.is_file():
+            raise FileNotFoundError(f"IFC file not found: {candidate}")
+        return candidate
+
+    ifc_dir = resolve_ifc_dir()
+    ifc_files = sorted(p for p in ifc_dir.iterdir() if p.suffix.lower() == ".ifc")
+    if not ifc_files:
+        raise FileNotFoundError("No .ifc files found in IFC-Files/ folder.")
+    return ifc_files[0]
+
+
+def resolve_csv_path(ifc_path: Path, project_root: Path | None = None) -> Path:
+    root = project_root or resolve_project_root()
+    return root / "output" / f"{ifc_path.stem}.csv"
 
 
 def distance_between_points(
@@ -304,18 +318,40 @@ def print_ifc_hierarchy(ifc_file_path, indent=0):
         traverse(project, indent)
 
 
-# Convert list to dict
-geom_dict = {}
-for item in geom_data:
-    gid = item.get("GlobalId")
-    if gid:
-        geom_dict[gid] = item.get("centroid")
+@lru_cache(maxsize=2)
+def load_graph(ifc_path: str | None = None) -> nx.DiGraph:
+    resolved_ifc = resolve_ifc_file(Path(ifc_path) if ifc_path else None)
+    csv_path = resolve_csv_path(resolved_ifc)
+    if not csv_path.is_file():
+        raise FileNotFoundError(
+            f"CSV not found for {resolved_ifc.name}. Run parser/ifc_to_csv.py first."
+        )
 
-html_dir = project_root / "output"
-html_dir.mkdir(parents=True, exist_ok=True)
-html_file = html_dir / "ifc_graph.html"
+    model = get_ifc_model(resolved_ifc)
+    geom_data = extract_geometry_data(model)
 
-G = build_graph_with_properties(csv_file, geom_dict)
-threshold_used = add_spatial_adjacency(G, geom_dict)
-plot_interactive_graph(G, html_file)
-print_ifc_hierarchy(ifc_file) # Helper to visualize hierarchy in console
+    geom_dict = {}
+    for item in geom_data:
+        gid = item.get("GlobalId")
+        if gid:
+            geom_dict[gid] = item.get("centroid")
+
+    G = build_graph_with_properties(str(csv_path), geom_dict)
+    add_spatial_adjacency(G, geom_dict)
+    return G
+
+
+def main() -> None:
+    ifc_file = resolve_ifc_file()
+    project_root = resolve_project_root()
+    html_dir = project_root / "output"
+    html_dir.mkdir(parents=True, exist_ok=True)
+    html_file = html_dir / "ifc_graph.html"
+
+    G = load_graph(str(ifc_file))
+    plot_interactive_graph(G, html_file)
+    print_ifc_hierarchy(ifc_file)
+
+
+if __name__ == "__main__":
+    main()

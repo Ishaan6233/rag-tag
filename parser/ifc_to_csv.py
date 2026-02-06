@@ -6,6 +6,7 @@ from pathlib import Path
 import ifcopenshell
 import ifcopenshell.util.element as element
 import pandas as pd
+from ifc_geometry_parse import InvalidIfcError, get_ifc_model
 
 
 def get_objects_data_by_class(model, class_type):
@@ -275,7 +276,7 @@ def parse_ifc_to_csv(ifc_path: Path, csv_path: Path, class_type: str = None) -> 
     If class_type is specified, only export that class. Otherwise export all
     building elements.
     """
-    model = ifcopenshell.open(str(ifc_path))
+    model = get_ifc_model(ifc_path)
 
     if class_type:
         # Export specific class
@@ -399,7 +400,11 @@ def main():
         csv_path = out_dir / csv_name
         try:
             # Get all building elements
-            model = ifcopenshell.open(str(p))
+            try:
+                model = get_ifc_model(p)
+            except InvalidIfcError as exc:
+                print(f"  {p.name} -> ERROR: {exc}")
+                continue
             all_data = []
             all_attributes = set()
 

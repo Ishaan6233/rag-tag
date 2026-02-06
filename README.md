@@ -233,6 +233,63 @@ The agent will:
 
 ---
 
+## IFC Viewer + Chat Web App (IFC.js)
+
+This adds a web UI with:
+
+* **IFC.js viewer** (That Open Components)
+* **Chat panel** backed by the existing graph agent
+
+### Backend (FastAPI)
+
+```bash
+uv sync
+uv run uvicorn server.app:app --reload --port 8000
+```
+
+### Frontend (Vite)
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` and you should see:
+
+* The IFC model rendered in 3D
+* A chat panel at the bottom for graph queries
+
+### Production build (optional)
+
+```bash
+cd web
+npm run build
+```
+
+Then serve the built UI from FastAPI:
+
+```bash
+uv run uvicorn server.app:app --host 0.0.0.0 --port 8000
+```
+
+### Notes
+
+* The server reads IFC files from `IFC-Files/`
+* The graph uses the matching CSV in `output/<ifc>.csv`
+* Generate CSVs with: `uv run python parser/ifc_to_csv.py`
+* Set `COHERE_API_KEY` in `.env` for chat responses
+
+---
+
+## One-Command Dev (Backend + Frontend)
+
+Run both the FastAPI server and Vite dev server together:
+
+```bash
+uv run python scripts/dev.py
+```
+
 ## Console IFC Hierarchy Inspection (Optional)
 
 A helper function prints the raw IFC hierarchy directly from the file:

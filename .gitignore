@@ -10,3 +10,8 @@ wheels/
 .venv
 
 .env
+
+# Frontend
+web/node_modules/
+web/dist/
+web/.vite/

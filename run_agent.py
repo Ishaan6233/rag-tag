@@ -14,7 +14,7 @@ def _load_graph():
     sys.path.insert(0, str(parser_dir))
 
     import csv_to_graph  # type: ignore
-    return csv_to_graph.G
+    return csv_to_graph.load_graph()
 
 
 def main() -> int:

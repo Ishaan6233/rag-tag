@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>rag-tag IFC Explorer</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand__title">rag-tag IFC Explorer</div>
+          <div class="brand__subtitle">
+            Geometry + Graph Chat over IFC
+          </div>
+        </div>
+        <div class="controls">
+          <div class="file-pill" id="fileName">Loading IFC…</div>
+          <button class="button" id="reloadBtn">Reload Model</button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="viewer">
+          <div class="viewer__canvas" id="viewport"></div>
+          <div class="viewer__status" id="status">Initializing viewer…</div>
+        </section>
+
+        <section class="chat">
+          <div class="chat__header">
+            <div>
+              <div class="chat__title">Graph Assistant</div>
+              <div class="chat__subtitle">
+                Ask about levels, types, adjacency, and spatial context
+              </div>
+            </div>
+            <div class="chat__badge">Cohere Command R+</div>
+          </div>
+          <div class="chat__tabs">
+            <button class="tab tab--active" data-tab="chat">Chat</button>
+            <button class="tab" data-tab="steps">Steps Followed</button>
+            <a class="tab tab--link" href="/api/graph" target="_blank" rel="noreferrer">
+              Graph HTML
+            </a>
+          </div>
+          <div class="chat__panel chat__panel--active" data-panel="chat">
+            <div class="chat__messages" id="messages"></div>
+          </div>
+          <div class="chat__panel" data-panel="steps">
+            <div class="steps" id="steps"></div>
+          </div>
+          <form class="chat__input" id="chatForm">
+            <input
+              id="chatText"
+              type="text"
+              placeholder="Ask: How many doors are on Level 2?"
+              autocomplete="off"
+            />
+            <button class="button button--primary" type="submit">Send</button>
+          </form>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
